@@ -123,9 +123,8 @@ class _RandomWordsState extends State<RandomWords> {
   }
 
   Widget _buildSuggestions() {
-    return ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemBuilder: /*1*/ (context, i) {
+    /*
+    return ListView.builder(padding: const EdgeInsets.all(16.0),  itemBuilder: /*1*/ (context, i) {
           if (i.isOdd) return const Divider(); /*2*/
 
           final index = i ~/ 2; /*3*/
@@ -134,6 +133,16 @@ class _RandomWordsState extends State<RandomWords> {
           }
           return _buildRow(_suggestions[index]);
         });
+     */
+    return Scaffold(
+      appBar: AppBar(title: Text("Search Result")),
+      body: FutureBuilder<List<BookResult>>(
+        future: fetchSearchResult(),
+        builder: (context, snapshot) {
+          return ListTile(title: Text("asdd"));
+        },
+      ),
+    );
   }
 
   Widget _buildRow(WordPair pair) {
@@ -146,27 +155,75 @@ class _RandomWordsState extends State<RandomWords> {
   }
 }
 
+class BookResult {
+  final String title;
+  final String url;
+  final String image;
+
+  BookResult({required this.title, required this.url, required this.image});
+
+  factory BookResult.fromJson(Map<String, dynamic> json) {
+    return BookResult(
+      title: json['title'] as String,
+      url: json['link'] as String,
+      image: json['image'] as String
+    );
+  }
+}
+
+
 class JSONGet extends StatefulWidget {
   @override
   _JSONGetState createState() => _JSONGetState();
 }
 
+Future<List<BookResult>> fetchSearchResult() async {
+  http.Response response = await http.get(
+      Uri.parse("https://openapi.naver.com/v1/search/book.json?query=코스모스&display=10&start=1"),
+      headers: {
+        "X-Naver-Client-Id": "yd4FH2JZKQuw5DhPOu9T",
+        "X-Naver-Client-Secret": "FycyDRfm5j"
+      });
+
+  Map<String, dynamic> data = jsonDecode(response.body);
+  List<dynamic> list = data["items"];
+  List<BookResult> result = list.map<BookResult>((json) => BookResult.fromJson(json)).toList();
+
+  return result;
+}
+
 class _JSONGetState extends State<JSONGet> {
+  List<BookResult> _result = <BookResult>[];
 
   Future<String> getData() async {
     http.Response response = await http.get(
-        Uri.parse("https://openapi.naver.com/v1/search/book.xml?query=코스모스&display=10&start=1"),
+        Uri.parse("https://openapi.naver.com/v1/search/book.json?query=코스모스&display=10&start=1"),
         headers: {
           "X-Naver-Client-Id": "yd4FH2JZKQuw5DhPOu9T",
           "X-Naver-Client-Secret": "FycyDRfm5j"
         });
-    print(response.body);
-    List data = jsonDecode(response.body);
-    print("###");
-    print(data[1]['title']);
+
+    Map<String, dynamic> data = jsonDecode(response.body);
+    List<dynamic> list = data["items"];
+    List<BookResult> result = list.map<BookResult>((json) => BookResult.fromJson(json)).toList();
+
+    result.forEach((element) {
+      print(element.url);
+    });
+
+    // print(result);
+    // print(data);
+    // print(response.body);
+    // List data = jsonDecode(response.body);
+    // print("###");
+    // print(data[1]['title']);
+
+    _result = result;
+
     return "";
   }
 
+  /*
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -177,5 +234,22 @@ class _JSONGetState extends State<JSONGet> {
         ),
       ),
     );
+  }
+  */
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _buildSearchResult()
+    );
+  }
+  Widget _buildSearchResult() {
+    return ListView.builder(itemBuilder: (context, i) {
+      return _buildSearchBook();
+    });
+  }
+
+  Widget _buildSearchBook() {
+    return ListTile(title: Text("asdd"), onTap: getData);
   }
 }
